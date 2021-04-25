@@ -196,6 +196,13 @@ Dokumentet tar utgangspunkt i målingene fra language-learning prosjektet. Analy
 </div>
 
 
+<div id="målinger-og-data" class="section level3">
+<h3>Målinger og data</h3>
+<p>I tabellen under er data fra Tabell 1 til Tabell 8 insatt. Denne er utgangspunktet for analysene som vil bli gjort. Merk at “Helsfyr” er forkortet til “HLF”. Dette er en konvensjon for resten av dokumentet.</p>
+<p>Dokumentet snakker om forventninger, som er matematisk definert for en tilfeldig variabel, <span class="math inline">\(X\)</span>, ved <span class="math inline">\(E[X]=\int xdP_X(x)\)</span> der <span class="math inline">\(E[X]\)</span> og <span class="math inline">\(P_X(x)\)</span> er forventningen og den kumulative fordelingen til <span class="math inline">\(X\)</span>. For den ikke-matematiske, så kan man tenke på forventningen som det <em>underliggende og strukturelle</em> til en gruppe observasjoner – nemlig det som vil vere gjennomsnittet gitt at man har mange nok observasjoner.</p>
+<p>En antagelse som er gjort for alle testene som nå blir gjort er at forsøkspersonene er samplet fra den samme fordelingen. Dette er en antagelse som diverre trolig ikke holder, og som er diskutert i seksjon &lt;insert-relevant-section-in-main-document&gt;. Målingene viser differanser (see seksjon &lt;section&gt; for detaljer). En naturlig antagelse for forventningen til en språklig kunnskapskurve, er at denne er strengt økene i konstant og uniform læring over tid. Dette medfører at forventningen til en differanse i kunnskap (altså læring) av typen i tabellen under ikke skal vere negativ. Dette er heller ikke tilfelle. En naturlig antagelse til for forventningen til en språklig læringskurve (differanse i kunnskap), er at differansen i læring er avtagende gitt høyere kunnskap. Dette er av praktisk betydning, fordi forsøkspersonene ved ved LIN var analfabeter, mens de ved Helsfyr i stor grad ikke var dette. Siden utgangspunktet ikke er likt, er det ikke gitt at det er en naturlig null hypotese å anta at forventningen i læring (bestemt av en måling i tabellen under) er lik for Helsfyr og LIN. En mer naturlig null-hypotese er at forsøkspersonene ved LIN har større forventet læring enn forsøkspersonene ved Helsfyr. Begge disse hypotesene vil bli testet.</p>
+<p>Et interessant spørsmål er hva det totale bildet av alle målingene sier. Statistisk sett er dette et komplisert spørsmål, av den enkle grunn at <em>de ulike dimensjonene ikke kan antas å vere uavhengige</em>. I den siste seksjonen i dokumentet støtter vi oss på at gruppe-målingene er gjennomsnitt, og vil ha en fordeling som tenderer mot en normalfordeling. Når målingene er standardiserte og i så måte har lik skala, kan vi stille spørsmål rundt summen av gjennomsnittene for LIN og HLF. Normalfordelingen sin kovariansmatrise hjelper oss å ta hensyn til avhengigheten mellom dimensjonene.</p>
+<p>Mye statistisk teori baserer seg på at funksjoner tenderer mot (ofte kvadratiske) standard funksjonsuttrykk jo mer data vi har. For eksempel, så vil et gjennomsnitt vere eksakt normalfordelt (Gaussisk fordeling) når vi har uendelig mye data. I language-learning prosjektet har vi 5 observasjoner fra HLF og 7 fra LIN. Diverre er det slik at <span class="math inline">\(5&lt;7&lt;\infty\)</span>. Å benytte tendensen mot normalfordeling for fordelingen til gjennomsnitt blir likevel ofte sett på som grei når vi har mer enn 30 observasjoner. Dette har vi dessverre ikke for hver enkelt måling, men hvor mange <em>effektive observasjoner</em> vi har for det det totale antall målinger er uklart. Men det vil ligge et sted mellom <code>12</code> (målingene er fullstendig avhengige) og <code>r</code>12*96` (målingene er uavhengige). Dette vil vi estimere.</p>
 <pre class="r"><code>llData &lt;- data.frame(
   &quot;School&quot; = c(rep(&quot;LIN&quot;, 7), rep(&quot;HLF&quot;, 5)),
   &quot;Table 1&quot; = c(0.225, NA, 0.1, 0.375, 0.4, NA, 0.067,
@@ -608,6 +615,44 @@ HLF
 </tr>
 </tbody>
 </table>
+</div>
+<div id="marginale-hypotesetester" class="section level3">
+<h3>Marginale hypotesetester</h3>
+<p>&lt;insert parallel coordinate plot&gt;</p>
+<p>Anta at gruppe <span class="math inline">\(A\)</span> er HLF og gruppe <span class="math inline">\(B\)</span> er LIN. La <span class="math inline">\(\mu=E[X]\)</span> vere forventningen til en variabel. Den klassiske statistiske testen for å teste</p>
+<ul>
+<li><span class="math inline">\(H0: \mu_A = \mu_B\)</span>,</li>
+</ul>
+<p>mot</p>
+<ul>
+<li><span class="math inline">\(H1: \mu_A \neq \mu_B\)</span>,</li>
+</ul>
+<p>er en t-test &lt;insert-reference&gt;. t-testen blir kalt en Welch’s t-test når vi har ulikt antall observasjonar i hver gruppe, <span class="math inline">\(n_A\neq n_B\)</span>, og når underliggande varians for kvar gruppe er ulik og må bli estimert. Dette er tilfelle for våre data – vi ønsker ikke å gjøre unødvendige antagelser om for eksempel lik varians.</p>
+<p>En t-test har antagelser om normalitet som ikke kan antas å holde når vi har så lite data i hver gruppe, <span class="math inline">\(n_A=5\)</span> og <span class="math inline">\(n_B=7\)</span>. For å lette på antagelsene om normalitet tester vi i tillegg til klassisk Welch’s t-test en parametrisk bootstrap Welch t-test &lt;insert-reference&gt;.</p>
+<p>&lt;insert <span class="math inline">\(3\times 4\)</span> figure with individual radial plots&gt;</p>
+<p>&lt;insert table with marginal hypothesis testing, both two-sided and one-sided&gt;</p>
+<p>&lt;insert figure with scaled t-test confidence bands + group-means in radial plot&gt;</p>
+</div>
+<div id="hypotesetester-for-summen-av-målinger" class="section level3">
+<h3>Hypotesetester for summen av målinger</h3>
+<blockquote>
+<p>Explain the naive independence assumption</p>
+</blockquote>
+<blockquote>
+<p>Explain not just HLF &lt; LIN 0.5^8 (loose information about distance)</p>
+</blockquote>
+<blockquote>
+<p>Do the math for the distribution of statistic under null-hypothesis (sum of averages are equal)</p>
+</blockquote>
+<blockquote>
+<p>Clearly define the assumptions and estimators etc.</p>
+</blockquote>
+<p>&lt;insert table for hypothesis test for sum of measurements&gt;</p>
+</div>
+<div id="conclusion" class="section level3">
+<h3>Conclusion</h3>
+<p>Write amazing conclusion</p>
+</div>
 
 
 
