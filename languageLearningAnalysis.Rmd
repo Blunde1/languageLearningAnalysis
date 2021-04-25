@@ -1,6 +1,23 @@
 ---
-title: "Analysis of language-learning data"
-output: html_document
+title: "Analyse av language-learning data"
+output:
+  html_document:
+    code_folding: hide
+abstract: "
+  Dokumentet tar utgangspunkt i målingene fra language-learning prosjektet.
+  Analysene er gjort under antagelse av at forsøkspersonene er samplet fra samme initiell fordeling.
+  Denne antagelsen kan diskuteres. 
+  Resultatet av målingene blir først presentert visuelt, for så å bli analysert med statistiske tester på marginalt nivå.
+  Null-hypotesen, at forventningen er lik for LIN og Helsfyr for en gitt måling, blir ikke forkastet når hver dimensjonene <finn bedre ord> er testet hver for seg.
+  Av de åtte målingene så er resultatene fra \\<insert-measurement-type\\> de resultatene som er nærmest å forkaste en individuell null-hypotese.
+  Dette blir klart etter inspeksjon av differanser etter en standardisering av de ulike dimensjonene, see Figur \\<sett inn fig-number\\>.
+  Merk likevel at strengere krav til signifikans må stilles når flere hypoteser blir testet samtidig, dette grunnet multippel-testing-problem \\<sett-inn-en-bra-referanse\\>.
+  Denne standardiseringen viser at alle gjennomsnitt for progresjon i de ulike dimensjonene i Helsfyr er mindre enn korresponderende gjennomsnitt ved LIN.
+  En statistisk test er utviklet for å teste en null-hypotese (at summen av standardiserte målinger er like) mot en alternativ (at de er ulike / Helsfyr < LIN).
+  Denne testen forkaster/forkaster ikke null hypotesen på <konfidens>-nivå.
+  Dette er et første resultat på at språklig progresjon er lik/ulik for de to ulike skolene.
+  Følgelig motiverer det til økt interesse, spørsmålsstilling og forskning rundt status-quo i norsk språkundervisningen.
+  "
 ---
 
 ```{r setup, include=FALSE}
@@ -41,5 +58,13 @@ test_cols <- names(llData)[-1]
 
 ```{r look-at-wide-data}
 llData %>%
-    kbl() %>%
+    kbl(caption = "Measurement-data for the students at LIN and HLF. See <insert-reference-here> for a detailed explanation of the measurement methodology.",
+        title = "Measurement-data") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+
+
+
+
+
