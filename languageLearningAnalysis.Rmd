@@ -56,12 +56,16 @@ Dette vil vi estimere.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(lazyeval) # interp function
 library(purrr)
 library(kableExtra)
+library(GGally)
+
+cbp <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 ```
 
 ```{r create-data}
@@ -85,8 +89,12 @@ llData <- data.frame(
                 0.2515, 0.1, 0.375, 0.0365, 0.1909)
 )
 names(llData) = c("school", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8")
-llData <- llData %>% mutate(school=factor(school, levels=unique(school)))
 test_cols <- names(llData)[-1]
+llData$Group <- llData$school
+llData$Group[is.na(llData$T1)] <- "LIN-T1-Missing"
+llData <- llData %>% 
+  mutate(school=factor(school, levels=unique(school))) %>%
+  mutate(Group = factor(Group, levels=unique(Group)))
 ```
 
 
@@ -100,7 +108,22 @@ llData %>%
 
 ### Marginale hypotesetester
 
-\<insert parallel coordinate plot\>
+```{r parallel-cooredinate-plot, fig.cap="Observasjoner av målinger i Tabell 1 til 8. Observasjonane er standardiserte for å oppnå ein felles skala. Forsøkspersonene med manglende observasjon i Tabell 1 er gruppert i oransj."}
+p <- 
+  ggparcoord(
+    llData,
+    columns = 2:9, groupColumn = 10,missing="mean",
+    showPoints = TRUE, 
+    title = "Parallel Coordinate Plot for Measurements",
+    alphaLines = 1.0
+  ) + 
+  ylab("Standardized measurements") + 
+  xlab("Table") + 
+  theme_bw() +
+  scale_colour_manual(values=cbp) + 
+  theme(legend.position = "top")
+p
+```
 
 Anta at gruppe $A$ er HLF og gruppe $B$ er LIN.
 La $\mu=E[X]$ vere forventningen til en variabel.
@@ -131,6 +154,8 @@ For å lette på antagelsene om normalitet tester vi i tillegg til klassisk Welc
 > Explain the naive independence assumption
 
 > Explain not just HLF < LIN 0.5^8 (loose information about distance)
+
+> Effective sample size!
 
 > Do the math for the distribution of statistic under null-hypothesis (sum of averages are equal)
 
