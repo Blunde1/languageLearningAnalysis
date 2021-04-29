@@ -112,7 +112,7 @@ llData %>%
 p <- 
   ggparcoord(
     llData,
-    columns = 2:9, groupColumn = 10,missing="mean",
+    columns = 2:9, groupColumn = 10, missing="mean",
     showPoints = TRUE, 
     title = "Parallel Coordinate Plot for Measurements",
     alphaLines = 1.0
@@ -123,6 +123,29 @@ p <-
   scale_colour_manual(values=cbp) + 
   theme(legend.position = "top")
 p
+
+
+colNames <- colnames(llData[,2:9])
+transformedData <- data.frame(sapply(2:9, function(j){
+  x <- llData[,j]
+  (x - mean(x,na.rm=T))/sd(x,na.rm=T)
+}))
+colnames(transformedData) <- colnames(llData[,2:9])
+transformedData$Group <- llData$Group
+transformedData$StudentNum <- 1:nrow(llData)
+dataLong <- gather(transformedData, condition, measurement, T1:T8, factor_key=TRUE)
+dataLong$conditionNumeric <- as.numeric(dataLong$condition)
+dataLong %>%
+  ggplot(aes(x=conditionNumeric,y=measurement,group=StudentNum)) +
+  geom_point(aes(colour=Group)) + 
+  geom_line(aes(colour=Group)) + 
+  scale_x_continuous(breaks = 1:8, labels=colNames) + 
+  ylab("Standardized measurements") + 
+  xlab("Table") + 
+  theme_bw() +
+  scale_colour_manual(values=cbp) + 
+  theme(legend.position = "top") + 
+  ggtitle("Parallel Coordinate Plot for Measurements")
 ```
 
 Anta at gruppe $A$ er HLF og gruppe $B$ er LIN.
