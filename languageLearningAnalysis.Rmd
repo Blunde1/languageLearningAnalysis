@@ -108,23 +108,7 @@ llData %>%
 
 ### Marginale hypotesetester
 
-```{r parallel-cooredinate-plot, fig.cap="Observasjoner av målinger i Tabell 1 til 8. Observasjonane er standardiserte for å oppnå ein felles skala. Forsøkspersonene med manglende observasjon i Tabell 1 er gruppert i oransj."}
-p <- 
-  ggparcoord(
-    llData,
-    columns = 2:9, groupColumn = 10, missing="mean",
-    showPoints = TRUE, 
-    title = "Parallel Coordinate Plot for Measurements",
-    alphaLines = 1.0
-  ) + 
-  ylab("Standardized measurements") + 
-  xlab("Table") + 
-  theme_bw() +
-  scale_colour_manual(values=cbp) + 
-  theme(legend.position = "top")
-p
-
-
+```{r parallel-cooredinate-plot, fig.cap="Observasjoner av målinger i Tabell 1 til 8. Observasjonane er standardiserte for å oppnå ein felles skala. Forsøkspersonene med manglende observasjon i Tabell 1 er gruppert i oransj.", warning=FALSE}
 colNames <- colnames(llData[,2:9])
 transformedData <- data.frame(sapply(2:9, function(j){
   x <- llData[,j]
