@@ -108,7 +108,7 @@ llData %>%
 
 ### Marginale hypotesetester
 
-```{r parallel-cooredinate-plot, fig.cap="Observasjoner av målinger i Tabell 1 til 8. Observasjonane er standardiserte for å oppnå ein felles skala. Forsøkspersonene med manglende observasjon i Tabell 1 er gruppert i oransj.", warning=FALSE}
+```{r parallel-cooredinate-plot, fig.cap="Observasjoner av målinger i Tabell 1 til 8. Observasjonane er standardiserte for å oppnå en felles skala. Forsøkspersonene med manglende observasjon i Tabell 1 er gruppert i oransj.", warning=FALSE}
 colNames <- colnames(llData[,2:9])
 transformedData <- data.frame(sapply(2:9, function(j){
   x <- llData[,j]
@@ -124,15 +124,15 @@ dataLong %>%
   geom_point(aes(colour=Group)) + 
   geom_line(aes(colour=Group)) + 
   scale_x_continuous(breaks = 1:8, labels=colNames) + 
-  ylab("Standardized measurements") + 
-  xlab("Table") + 
+  ylab("Standardiserte målinger") + 
+  xlab("Tabell") + 
   theme_bw() +
   scale_colour_manual(values=cbp) + 
   theme(legend.position = "top") + 
-  ggtitle("Parallel Coordinate Plot for Measurements")
+  ggtitle("Parallell-koordinat plot for målinger")
 ```
 
-Anta at gruppe $A$ er HLF og gruppe $B$ er LIN.
+La at gruppe $A$ er HLF og gruppe $B$ er LIN.
 La $\mu=E[X]$ vere forventningen til en variabel.
 Den klassiske statistiske testen for å teste
 
@@ -143,11 +143,53 @@ mot
 - $H1: \mu_A \neq \mu_B$,
 
 er en t-test \<insert-reference\>.
-t-testen blir kalt en Welch's t-test når vi har ulikt antall observasjonar i hver gruppe, $n_A\neq n_B$, og når underliggande varians for kvar gruppe er ulik og må bli estimert.
+Når vi har et ulikt antall observasjoner i hver gruppe, $n_A\neq n_B$, og i tillegg ikke vil gjøre antagelser om lik varians i gruppa $A$ og $B$, benytter man typen Welch's t-test.
 Dette er tilfelle for våre data -- vi ønsker ikke å gjøre unødvendige antagelser om for eksempel lik varians.
 
-En t-test har antagelser om normalitet som ikke kan antas å holde når vi har så lite data i hver gruppe, $n_A=5$ og $n_B=7$.
+En t-test har antagelser om normalitet, som ikke kan antas å holde når vi har lite data i hver gruppe.
+Dette er tilfelle når vi har $n_A=5$ og $n_B=7$.
 For å lette på antagelsene om normalitet tester vi i tillegg til klassisk Welch's t-test en parametrisk bootstrap Welch t-test \<insert-reference\>. 
+Algoritme 1 illustrerer denne testen.
+
+******
+**Algoritme 1**:  Welch's t-test parametrisk bootstrap
+
+******
+
+**Input**
+
+- Gruppe-observasjoner $\mathbf{x}=\{x_i\}_{i=1}^{n_A}$, $\mathbf{y}=\{y_i\}_{i=1}^{n_B}$.
+- Antall bootstrap iterasjoner $B$.
+
+**Do**
+
+1. La $T$ vere test-statistic fra en Welch's t-test mellom $\mathbf{x}^{(b)}$ og $\mathbf{y}^{(b)}$.
+2. La $\overline{x},~\overline{y}$ og $\overline{z}$ vere gjennomsnittet i $\mathbf{x}$, $\mathbf{y}$ respektivt, i tillegg til gjennomsnittet i den samlede gruppen av alle observasjoner i $\mathbf{x}$ og $\mathbf{y}$.
+3.  Konstruer to grupper med observasjoner som tilfredstiller $H0$ eksakt:
+    a) $\mathbf{x}^{(0)} = \{x_i^{(0)} = x_i - \overline{x} + \overline{z}\}$ for alle observasjoner i $\mathbf{x}$.
+    a) $\mathbf{y}^{(0)} = \{y_i^{(0)} = x_i - \overline{y} + \overline{z}\}$ for alle observasjoner i $\mathbf{y}$.
+4.  **for** $b=1:B$
+    a) Konstruer $\mathbf{x}^{(b)}$ som en tilfeldig trukket mengde fra $\mathbf{x^{(0)}}$ med tilbakelegging.
+    b) Konstruer $\mathbf{y}^{(b)}$ som en tilfeldig trukket mengde fra $\mathbf{y^{(0)}}$ med tilbakelegging.
+    c) La $T^{(b)}$ vere test-statistic for en Welch's t-test mellom $\mathbf{x}^{(b)}$ og $\mathbf{y}^{(b)}$.
+
+**Return**
+
+- Returner bootstrap p-verdi $p_{\text{boot}}$: Proporsjonen av de $B$ tester med statistic større enn $T$:
+    a. $p_{\text{boot}} = \frac{1}{B+1}\left(1 + \sum_{b=1}^B 1(T^{(b)}>T)   \right)$.
+
+******
+
+Ved å benytte Algoritme 1 kan vi i tillegg til p-verdi trekke ut $(1-\alpha)100$\% konfidensintervall der $\alpha$ er et satt signifikansnivå.
+Tabell 2 og Figur 2 illustrerer applikasjon av Algoritme 1 på data i Tabell 1 med de to ulike skolene som gruppe.
+Merk at testene er marginale, da de arbeider individuelt hver kolonne i Tabell 1.
+Vi har derfor et typisk multippel-testing problem: Når 100 uavhengige tester blir utført på data som tilfredstiller H0 vil man forvente at $100\alpha$ tester vil vere signifikante på $(1-\alpha)100$ signifikansnivå.
+Vi har 8 tester som ikke kan antas å vere uavhengige, og denne avhengigheten gjør det vanskelig å korrigere for multippel-testing.
+Tabell 2 bør derfor leses som at *$H0$ blir ikkke forkastet i noe tilfelle individuelt*, og p-verdiene for dette må rapporteres med varsomhet.
+
+Figur 2 inviterer til dypere tankegang
+
+
 
 \<insert $3\times 4$ figure with individual radial plots\>
 
