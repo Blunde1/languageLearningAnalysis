@@ -202,7 +202,7 @@ Dokumentet tar utgangspunkt i målingene fra language-learning prosjektet. Analy
 <p>Dokumentet snakker om forventninger, som er matematisk definert for en tilfeldig variabel, <span class="math inline">\(X\)</span>, ved <span class="math inline">\(E[X]=\int xdP_X(x)\)</span> der <span class="math inline">\(E[X]\)</span> og <span class="math inline">\(P_X(x)\)</span> er forventningen og den kumulative fordelingen til <span class="math inline">\(X\)</span>. For den ikke-matematiske, så kan man tenke på forventningen som det <em>underliggende og strukturelle</em> til en gruppe observasjoner – nemlig det som vil vere gjennomsnittet gitt at man har mange nok observasjoner.</p>
 <p>En antagelse som er gjort for alle testene som nå blir gjort er at forsøkspersonene er samplet fra den samme fordelingen. Dette er en antagelse som diverre trolig ikke holder, og som er diskutert i seksjon &lt;insert-relevant-section-in-main-document&gt;. Målingene viser differanser (see seksjon &lt;section&gt; for detaljer). En naturlig antagelse for forventningen til en språklig kunnskapskurve, er at denne er strengt økene i konstant og uniform læring over tid. Dette medfører at forventningen til en differanse i kunnskap (altså læring) av typen i tabellen under ikke skal vere negativ. Dette er heller ikke tilfelle. En naturlig antagelse til for forventningen til en språklig læringskurve (differanse i kunnskap), er at differansen i læring er avtagende gitt høyere kunnskap. Dette er av praktisk betydning, fordi forsøkspersonene ved ved LIN var analfabeter, mens de ved Helsfyr i stor grad ikke var dette. Siden utgangspunktet ikke er likt, er det ikke gitt at det er en naturlig null hypotese å anta at forventningen i læring (bestemt av en måling i tabellen under) er lik for Helsfyr og LIN. En mer naturlig null-hypotese er at forsøkspersonene ved LIN har større forventet læring enn forsøkspersonene ved Helsfyr. Begge disse hypotesene vil bli testet.</p>
 <p>Et interessant spørsmål er hva det totale bildet av alle målingene sier. Statistisk sett er dette et komplisert spørsmål, av den enkle grunn at <em>de ulike dimensjonene ikke kan antas å vere uavhengige</em>. I den siste seksjonen i dokumentet støtter vi oss på at gruppe-målingene er gjennomsnitt, og vil ha en fordeling som tenderer mot en normalfordeling. Når målingene er standardiserte og i så måte har lik skala, kan vi stille spørsmål rundt summen av gjennomsnittene for LIN og HLF. Normalfordelingen sin kovariansmatrise hjelper oss å ta hensyn til avhengigheten mellom dimensjonene.</p>
-<p>Mye statistisk teori baserer seg på at funksjoner tenderer mot (ofte kvadratiske) standard funksjonsuttrykk jo mer data vi har. For eksempel, så vil et gjennomsnitt vere eksakt normalfordelt (Gaussisk fordeling) når vi har uendelig mye data. I language-learning prosjektet har vi 5 observasjoner fra HLF og 7 fra LIN. Diverre er det slik at <span class="math inline">\(5&lt;7&lt;\infty\)</span>. Å benytte tendensen mot normalfordeling for fordelingen til gjennomsnitt blir likevel ofte sett på som grei når vi har mer enn 30 observasjoner. Dette har vi dessverre ikke for hver enkelt måling, men hvor mange <em>effektive observasjoner</em> vi har for det det totale antall målinger er uklart. Men det vil ligge et sted mellom <code>12</code> (målingene er fullstendig avhengige) og <code>r</code>12*96` (målingene er uavhengige). Dette vil vi estimere.</p>
+<p>Mye statistisk teori baserer seg på at funksjoner tenderer mot (ofte kvadratiske) standard funksjonsuttrykk jo mer data vi har. For eksempel, så vil et gjennomsnitt vere eksakt normalfordelt (Gaussisk fordeling) når vi har uendelig mye data. I language-learning prosjektet har vi 5 observasjoner fra HLF og 7 fra LIN. Diverre er det slik at <span class="math inline">\(5&lt;7&lt;\infty\)</span>. Å benytte tendensen mot normalfordeling for fordelingen til gjennomsnitt blir likevel ofte sett på som grei når vi har mer enn 30 observasjoner. Dette har vi dessverre ikke for hver enkelt måling, men hvor mange <em>effektive observasjoner</em> vi har for det det totale antall målinger er uklart. Men det vil ligge et sted mellom <code>12</code> (målingene er fullstendig avhengige) og 96 (målingene er uavhengige). Dette vil vi estimere.</p>
 <pre class="r"><code>llData &lt;- data.frame(
   &quot;School&quot; = c(rep(&quot;LIN&quot;, 7), rep(&quot;HLF&quot;, 5)),
   &quot;Table 1&quot; = c(0.225, NA, 0.1, 0.375, 0.4, NA, 0.067,
@@ -726,11 +726,226 @@ Observasjoner av målinger i Tabell 1 til 8. Observasjonane er standardiserte fo
 <ul>
 <li>Returner bootstrap p-verdi <span class="math inline">\(p_{\text{boot}}\)</span>: Proporsjonen av de <span class="math inline">\(B\)</span> tester med statistic større enn <span class="math inline">\(T\)</span>:
 <ol style="list-style-type: lower-alpha">
-<li><span class="math inline">\(p_{\text{boot}} = \frac{1}{B+1}\left(1 + \sum_{b=1}^B 1(T^{(b)}&gt;T) \right)\)</span>.</li>
+<li><span class="math inline">\(p_{\text{boot}} = \frac{1}{B+1}\left[1 + \sum_{b=1}^B 1\left(\left|T^{(b)}\right|&gt;\left|T\right|\right) \right]\)</span>.</li>
 </ol></li>
 </ul>
 <hr />
+<pre class="r"><code>boot.t.test &lt;- function(x, y, B=100000, alpha=0.05){
+  x &lt;- x[is.finite(x)]
+  y &lt;- y[is.finite(y)]
+  nx &lt;- length(x)
+  ny &lt;- length(y)
+  mx &lt;- mean(x)
+  my &lt;- mean(y)
+  mxy &lt;- mean(c(x,y))
+  tStatistic &lt;- t.test(x,y)$statistic
+  # Data satisfying H0
+  xh0 &lt;- x-mx+mxy
+  yh0 &lt;- y-my+mxy
+  tStatisticBoot &lt;- numeric(B)
+  meanH0Boot &lt;- numeric(B)
+  for(b in 1:B){
+    xb &lt;- sample(xh0, nx, replace = TRUE)
+    yb &lt;- sample(yh0, ny, replace=TRUE)
+    tStatisticBoot[b] &lt;- t.test(xb, yb)$statistic
+    meanH0Boot[b] &lt;- mean(c(xb, yb))
+  }
+  pvalue &lt;- (1 + sum(abs(tStatisticBoot)&gt;abs(tStatistic))) / (B+1)
+  CI &lt;- quantile(meanH0Boot, c(alpha/2, 1-alpha/2))
+  res &lt;- list(
+    pvalue = pvalue,
+    CI = CI
+  )
+  return(res)
+}</code></pre>
 <p>Ved å benytte Algoritme 1 kan vi i tillegg til p-verdi trekke ut <span class="math inline">\((1-\alpha)100\)</span>% konfidensintervall der <span class="math inline">\(\alpha\)</span> er et satt signifikansnivå. Tabell 2 og Figur 2 illustrerer applikasjon av Algoritme 1 på data i Tabell 1 med de to ulike skolene som gruppe. Merk at testene er marginale, da de arbeider individuelt hver kolonne i Tabell 1. Vi har derfor et typisk multippel-testing problem: Når 100 uavhengige tester blir utført på data som tilfredstiller H0 vil man forvente at <span class="math inline">\(100\alpha\)</span> tester vil vere signifikante på <span class="math inline">\((1-\alpha)100\)</span> signifikansnivå. Vi har 8 tester som ikke kan antas å vere uavhengige, og denne avhengigheten gjør det vanskelig å korrigere for multippel-testing. Tabell 2 bør derfor leses som at <em><span class="math inline">\(H0\)</span> blir ikkke forkastet i noe tilfelle individuelt</em>, og p-verdiene for dette må rapporteres med varsomhet.</p>
+<pre class="r"><code>#llDataLong &lt;- llData %&gt;% 
+#  gather(metric, measurement, `T1`:`T8`, factor_key=TRUE)
+
+ind.lin &lt;- llData$school == &quot;LIN&quot;
+ind.hlf &lt;- !ind.lin
+
+res &lt;- data.frame(matrix(NA,nrow=8, ncol=5))
+colnames(res) &lt;- c(&quot;table&quot;, &quot;pvalue: t-test&quot;, &quot;pvalue: bootstrapped t-test&quot;, &quot;ci-lower&quot;, &quot;ci-upper&quot;)
+pvalueboot &lt;- pvaluettest &lt;- lower &lt;- upper &lt;- numeric(8)
+for(j in 1:8){
+  pvaluettest[j] &lt;- t.test(llData[ind.lin, j+1], llData[ind.hlf, j+1])$p.value
+  test &lt;- boot.t.test(x=llData[ind.lin,j+1], y=llData[ind.hlf,j+1], B=1000)
+  pvalueboot[j] &lt;- test$pvalue
+  lower[j] &lt;- test$CI[1]
+  upper[j] &lt;- test$CI[2]
+}
+res$table &lt;- colnames(llData[,2:9])
+res$`pvalue: t-test` &lt;- pvaluettest
+res$`pvalue: bootstrapped t-test` &lt;- pvalueboot
+res$`ci-lower` &lt;- lower
+res$`ci-upper` &lt;- upper
+
+res %&gt;%
+  kbl(caption = &quot;Tabell 2: p-verdier for marginale hypotesetester. Verdier fra Welch&#39;s t-test og parametrisk Bootstrappet test er begge rapport og samsvarer med hverandre. I tillegg er 95% Konfidensintervall (0.025 og 0.975 empiriske kvantiler) for forventningen til verdier i tabell 1 til 8 rapportert. De er generert fra bootstrapping under H0. Krav til signifikans er strengere når man ser på flere tester samtidig, som i essens vil føre til høyere p-verdier. Da ingen p-verdier er signifikante marginalt blir dette mindre viktig.&quot;) %&gt;%
+  kable_styling(bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;))</code></pre>
+<table class="table table-striped table-hover table-condensed" style="margin-left: auto; margin-right: auto;">
+<caption>
+Tabell 2: p-verdier for marginale hypotesetester. Verdier fra Welch’s t-test og parametrisk Bootstrappet test er begge rapport og samsvarer med hverandre. I tillegg er 95% Konfidensintervall (0.025 og 0.975 empiriske kvantiler) for forventningen til verdier i tabell 1 til 8 rapportert. De er generert fra bootstrapping under H0. Krav til signifikans er strengere når man ser på flere tester samtidig, som i essens vil føre til høyere p-verdier. Da ingen p-verdier er signifikante marginalt blir dette mindre viktig.
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+table
+</th>
+<th style="text-align:right;">
+pvalue: t-test
+</th>
+<th style="text-align:right;">
+pvalue: bootstrapped t-test
+</th>
+<th style="text-align:right;">
+ci-lower
+</th>
+<th style="text-align:right;">
+ci-upper
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+T1
+</td>
+<td style="text-align:right;">
+0.6598588
+</td>
+<td style="text-align:right;">
+0.6313686
+</td>
+<td style="text-align:right;">
+0.1319950
+</td>
+<td style="text-align:right;">
+0.2922000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T2
+</td>
+<td style="text-align:right;">
+0.7157082
+</td>
+<td style="text-align:right;">
+0.7092907
+</td>
+<td style="text-align:right;">
+1.3000369
+</td>
+<td style="text-align:right;">
+2.6384000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T3
+</td>
+<td style="text-align:right;">
+0.1752588
+</td>
+<td style="text-align:right;">
+0.2477522
+</td>
+<td style="text-align:right;">
+-0.3347423
+</td>
+<td style="text-align:right;">
+0.5283377
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T4
+</td>
+<td style="text-align:right;">
+0.9012690
+</td>
+<td style="text-align:right;">
+0.9040959
+</td>
+<td style="text-align:right;">
+0.0045867
+</td>
+<td style="text-align:right;">
+0.3298283
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T5
+</td>
+<td style="text-align:right;">
+0.3818575
+</td>
+<td style="text-align:right;">
+0.3516484
+</td>
+<td style="text-align:right;">
+0.0918748
+</td>
+<td style="text-align:right;">
+0.4416290
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T6
+</td>
+<td style="text-align:right;">
+0.4159560
+</td>
+<td style="text-align:right;">
+0.3876124
+</td>
+<td style="text-align:right;">
+0.0066552
+</td>
+<td style="text-align:right;">
+0.0600867
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T7
+</td>
+<td style="text-align:right;">
+0.4562841
+</td>
+<td style="text-align:right;">
+0.4695305
+</td>
+<td style="text-align:right;">
+0.1098727
+</td>
+<td style="text-align:right;">
+0.3691321
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T8
+</td>
+<td style="text-align:right;">
+0.4834927
+</td>
+<td style="text-align:right;">
+0.4905095
+</td>
+<td style="text-align:right;">
+0.1299650
+</td>
+<td style="text-align:right;">
+0.3379927
+</td>
+</tr>
+</tbody>
+</table>
 <p>Figur 2 inviterer til dypere tankegang</p>
 <p>&lt;insert <span class="math inline">\(3\times 4\)</span> figure with individual radial plots&gt;</p>
 <p>&lt;insert table with marginal hypothesis testing, both two-sided and one-sided&gt;</p>

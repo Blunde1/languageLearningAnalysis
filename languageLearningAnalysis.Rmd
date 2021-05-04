@@ -50,7 +50,7 @@ I language-learning prosjektet har vi 5 observasjoner fra HLF og 7 fra LIN.
 Diverre er det slik at $5<7<\infty$.
 Å benytte tendensen mot normalfordeling for fordelingen til gjennomsnitt blir likevel ofte sett på som grei når vi har mer enn 30 observasjoner. 
 Dette har vi dessverre ikke for hver enkelt måling, men hvor mange _effektive observasjoner_ vi har for det det totale antall målinger er uklart. 
-Men det vil ligge et sted mellom `12` (målingene er fullstendig avhengige) og `r `12*96` (målingene er uavhengige).
+Men det vil ligge et sted mellom `12` (målingene er fullstendig avhengige) og `r 12*8` (målingene er uavhengige).
 Dette vil vi estimere.
 
 
@@ -176,9 +176,40 @@ Algoritme 1 illustrerer denne testen.
 **Return**
 
 - Returner bootstrap p-verdi $p_{\text{boot}}$: Proporsjonen av de $B$ tester med statistic større enn $T$:
-    a. $p_{\text{boot}} = \frac{1}{B+1}\left(1 + \sum_{b=1}^B 1(T^{(b)}>T)   \right)$.
+    a. $p_{\text{boot}} = \frac{1}{B+1}\left[1 + \sum_{b=1}^B 1\left(\left|T^{(b)}\right|>\left|T\right|\right)   \right]$.
 
 ******
+
+```{r boot-t-test}
+boot.t.test <- function(x, y, B=100000, alpha=0.05){
+  x <- x[is.finite(x)]
+  y <- y[is.finite(y)]
+  nx <- length(x)
+  ny <- length(y)
+  mx <- mean(x)
+  my <- mean(y)
+  mxy <- mean(c(x,y))
+  tStatistic <- t.test(x,y)$statistic
+  # Data satisfying H0
+  xh0 <- x-mx+mxy
+  yh0 <- y-my+mxy
+  tStatisticBoot <- numeric(B)
+  meanH0Boot <- numeric(B)
+  for(b in 1:B){
+    xb <- sample(xh0, nx, replace = TRUE)
+    yb <- sample(yh0, ny, replace=TRUE)
+    tStatisticBoot[b] <- t.test(xb, yb)$statistic
+    meanH0Boot[b] <- mean(c(xb, yb))
+  }
+  pvalue <- (1 + sum(abs(tStatisticBoot)>abs(tStatistic))) / (B+1)
+  CI <- quantile(meanH0Boot, c(alpha/2, 1-alpha/2))
+  res <- list(
+    pvalue = pvalue,
+    CI = CI
+  )
+  return(res)
+}
+```
 
 Ved å benytte Algoritme 1 kan vi i tillegg til p-verdi trekke ut $(1-\alpha)100$\% konfidensintervall der $\alpha$ er et satt signifikansnivå.
 Tabell 2 og Figur 2 illustrerer applikasjon av Algoritme 1 på data i Tabell 1 med de to ulike skolene som gruppe.
@@ -186,6 +217,34 @@ Merk at testene er marginale, da de arbeider individuelt hver kolonne i Tabell 1
 Vi har derfor et typisk multippel-testing problem: Når 100 uavhengige tester blir utført på data som tilfredstiller H0 vil man forvente at $100\alpha$ tester vil vere signifikante på $(1-\alpha)100$ signifikansnivå.
 Vi har 8 tester som ikke kan antas å vere uavhengige, og denne avhengigheten gjør det vanskelig å korrigere for multippel-testing.
 Tabell 2 bør derfor leses som at *$H0$ blir ikkke forkastet i noe tilfelle individuelt*, og p-verdiene for dette må rapporteres med varsomhet.
+
+```{r marginal-testing}
+#llDataLong <- llData %>% 
+#  gather(metric, measurement, `T1`:`T8`, factor_key=TRUE)
+
+ind.lin <- llData$school == "LIN"
+ind.hlf <- !ind.lin
+
+res <- data.frame(matrix(NA,nrow=8, ncol=5))
+colnames(res) <- c("table", "pvalue: t-test", "pvalue: bootstrapped t-test", "ci-lower", "ci-upper")
+pvalueboot <- pvaluettest <- lower <- upper <- numeric(8)
+for(j in 1:8){
+  pvaluettest[j] <- t.test(llData[ind.lin, j+1], llData[ind.hlf, j+1])$p.value
+  test <- boot.t.test(x=llData[ind.lin,j+1], y=llData[ind.hlf,j+1], B=1000)
+  pvalueboot[j] <- test$pvalue
+  lower[j] <- test$CI[1]
+  upper[j] <- test$CI[2]
+}
+res$table <- colnames(llData[,2:9])
+res$`pvalue: t-test` <- pvaluettest
+res$`pvalue: bootstrapped t-test` <- pvalueboot
+res$`ci-lower` <- lower
+res$`ci-upper` <- upper
+
+res %>%
+  kbl(caption = "Tabell 2: p-verdier for marginale hypotesetester. Verdier fra Welch's t-test og parametrisk Bootstrappet test er begge rapport og samsvarer med hverandre. I tillegg er 95% Konfidensintervall (0.025 og 0.975 empiriske kvantiler) for forventningen til verdier i tabell 1 til 8 rapportert. De er generert fra bootstrapping under H0. Krav til signifikans er strengere når man ser på flere tester samtidig, som i essens vil føre til høyere p-verdier. Da ingen p-verdier er signifikante marginalt blir dette mindre viktig.") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
 
 Figur 2 inviterer til dypere tankegang
 
