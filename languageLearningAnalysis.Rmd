@@ -246,6 +246,128 @@ res %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 ```
 
+
+```{r radial-plot, warning=FALSE}
+df <- llData
+test_cols <- names(df)[-c(1,10)]
+# Standardize
+df[,2:9] <- sapply(1:8, function(i) (df[,i+1] - mean(df[,i+1], na.rm=T))/sd(df[,i+1], na.rm=T))
+# CI
+ADJUST <- 5
+mean_plus <- function(x, adjust=ADJUST)
+{
+  mean(x, na.rm=T) + adjust
+}
+ind.lin <- df$school == "LIN"
+ind.hlf <- !ind.lin
+df_poly <- data.frame(matrix(NA,nrow=8, ncol=3))
+colnames(df_poly) <- c("metric", "lower", "upper")
+pvalueboot <- pvaluettest <- lower <- upper <- numeric(8)
+for(j in 1:8){
+  pvaluettest[j] <- t.test(df[ind.lin, j+1], df[ind.hlf, j+1])$p.value
+  test <- boot.t.test(x=df[ind.lin,j+1], y=df[ind.hlf,j+1], B=1000)
+  pvalueboot[j] <- test$pvalue
+  lower[j] <- test$CI[1]
+  upper[j] <- test$CI[2]
+}
+df_poly$metric <- as.factor(colnames(df[,2:9]))
+df_poly$`lower` <- lower + ADJUST
+df_poly$`upper` <- upper + ADJUST
+df_poly <- df_poly %>%
+  gather(type_edge, measure_edge, lower:upper)
+df_poly <- df_poly %>% tibble()
+# Means
+df_means <- df %>%
+  group_by(school) %>%
+  summarise_at(test_cols, mean_plus) %>%
+  gather(measure, measurement, `T1`:`T8`, factor_key=TRUE)
+# function requires 
+rotate_data <- function(data, col, by_col) {
+  lev <- levels(data[,by_col][[1]])
+  num <- length(lev)
+  dir <- rep(seq(((num - 1) * 360 / num), 0, length.out = num))
+  data$dir_ <- map_dbl(1:nrow(data), function(x) {dir[match(data[x,by_col][[1]], lev)]})
+  #col_num <- match("mpg", colnames(cars))
+  #filter_criteria <- interp(~ which_column == col_num, which_column = as.name(col))
+  expr <- lazyeval::interp(~x, x = as.name(col))
+  data <- mutate_(data, .dots = setNames(list(expr), "plotX"))
+  data <- mutate_(data, .dots = setNames(list(expr), "plotY"))
+  data <- data %>%
+    mutate(plotX = round(cos(dir_ * pi / 180) * plotX, 2),
+           plotY = round(sin(dir_ * pi / 180) * plotY, 2))
+  data
+} 
+# data points
+confidence_band <- rotate_data(df_poly, "measure_edge", "metric")
+confidence_band$id=1L
+#confidence_band <- confidence_band[c(1:7,1,8:14,8),]
+sjekk2 <- rotate_data(df_means[df_means$school=="LIN",], "measurement", "measure")
+sjekk3 <- rotate_data(df_means[df_means$school=="HLF",], "measurement", "measure")
+lim = max(df_poly$measure_edge*1.1)
+line_length <- lim - 1
+rl <- data_frame(dir = unique(sjekk2$dir_), l = rep(line_length, length(unique(sjekk2$dir_)))) %>% 
+  mutate(plotX = cos(dir * pi / 180) * (l),
+         plotY = sin(dir * pi / 180) * (l))
+rl$xend <- 0
+rl$yend <- 0
+lb <- rl
+lb$label <- levels(sjekk2$measure)
+circleFun <- function(center=c(0,0), diameter=1, npoints=100, start=0, end=2, filled=TRUE){
+  tt <- seq(start*pi, end*pi, length.out=npoints)
+  df <- data.frame(
+    x = center[1] + diameter / 2 * cos(tt),
+    y = center[2] + diameter / 2 * sin(tt)
+  )
+  if(filled==TRUE) { #add a point at the center so the whole 'pie slice' is filled
+    df <- rbind(df, center)
+  }
+  return(df)
+}
+circlegrid <- data_frame(dia = seq(lim / 4, 2 * lim, lim / 4))
+circlegrid <- circlegrid %>% 
+  mutate(data = map(dia, function(x) {
+    df     <- circleFun(diameter = x, filled = FALSE)
+    df$lev <- x
+    df
+  }))
+plotcircles <- bind_rows(circlegrid$data)
+plotcircles$lev <- as.factor(plotcircles$lev)
+cl <- data_frame(x = as.numeric(levels(plotcircles$lev)), label = as.character(round(x - ADJUST,1)))
+cl <- cl[cl$x <= lim,]
+middle <- circleFun(diameter = 1, start=0, end=2, filled = FALSE)
+# plot each layer with its own data and aesthetics
+cbp <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+colsLegend <- c("Helsfyr"=cbp[2], "LIN"=cbp[3], "95%-confidence"="grey70")
+fillLegend <- 
+  p <- 
+  ggplot() + 
+  geom_segment(data = rl, aes(x = plotX, xend = xend, y = plotY, yend = yend), colour = cbp[1]) +
+  geom_path   (data = plotcircles, aes(x = x, y = y, group = lev), colour = "grey50") + 
+  geom_text   (data = cl, aes(x = -x, y = 1, label = label), colour = "grey40") +
+  geom_polygon(data = middle, aes(x, y), fill = "grey50", colour = "black") + 
+  geom_polygon(data = confidence_band, aes(y = plotY, x = plotX, group=id, subgroup=type_edge, fill="95%-confidence"), 
+               size = 1, alpha = 0.6) +
+  geom_path(data=sjekk2[c(1:nrow(sjekk2),1),], aes(y = plotY, x = plotX, colour = "LIN"), size = 1) +
+  geom_point(data=sjekk2, aes(y = plotY, x = plotX), stat='identity', colour = cbp[3], size = 1) +
+  geom_path(data=sjekk3[c(1:nrow(sjekk3),1),], aes(y = plotY, x = plotX, colour = "Helsfyr"), size = 1, linetype = "dashed") +
+  geom_point(data=sjekk3, aes(y = plotY, x = plotX), stat='identity', colour = cbp[2], size = 1) +
+  geom_text   (data = lb, aes(x = 1.2*plotX, y = 1.2*plotY, label = label), colour = "black") +
+  ylim(-lim*1.2, lim*1.2) + xlim(-lim*1.2, lim*1.2) +
+  scale_fill_manual(name=NULL, values=colsLegend) + 
+  scale_color_manual(name="Gruppe", values=colsLegend) + 
+  theme(
+    axis.text  = element_blank(), 
+    axis.title = element_blank(), 
+    line       = element_blank(),
+    rect       = element_blank()
+  ) + 
+  coord_equal() + 
+  ggtitle("Radial-summary-plot for tabellar", 
+          subtitle="Målingar i tabellar er standardiserte. Konfidensintervall funne ved bootstrapping under H0")
+p
+```
+
+
 Figur 2 inviterer til dypere tankegang
 
 
