@@ -381,6 +381,16 @@ Figur 2 inviterer til dypere tankegang
 
 ### Hypotesetester for summen av målinger
 
+Figur 2 viser at målingene for læring alltid er større for LIN enn de for HLF.
+Spørsmålet vi her stiller er:
+
+> Hvor ekstremt er det at alle målinger for LIN samtidig og i så stor grad er større enn de for HLF?
+
+Dette spørsmålet er det svært vanskelig å svare på. 
+Vi må først eksplisitt definere hva som er __ekstremt__, og hva en naturlig null-hypotese er. 
+
+
+
 > Explain the naive independence assumption
 
 > Explain not just HLF < LIN 0.5^8 (loose information about distance)
